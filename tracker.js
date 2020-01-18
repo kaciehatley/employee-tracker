@@ -32,13 +32,35 @@ var connection = mysql.createConnection({
 
 // All functions that correspond with what the initial question
 function viewEmployees() {
-    connection.query("SELECT * FROM employee", function(err, res) {
-        if (err) throw err;
-        // Log all results of the SELECT statement in the employees table
-        console.log(cTable.getTable(res));
-        initialQuestion();
-    })
+    var queryString = "SELECT employee.id, employee.first_name, employee.last_name, roleJoin.title, deptJoin.name as department, roleJoin.salary, concat(emp.first_name,' ', emp.last_name) AS manager FROM employee INNER JOIN role roleJoin on roleJoin.id = employee.role_id inner join department deptJoin on deptJoin.id = roleJoin.department_id left join employee emp on employee.manager_id = emp.id";
+  
+    connection.query(queryString, function (err, res) {
+      if (err) throw err;
+      console.table(res);
+      initialQuestion();
+    });
+  
 }
+
+function viewDepts() {
+    var queryString = "SELECT * FROM department";
+
+    connection.query(queryString, function (err, res) {
+        if (err) throw err;
+        console.table(res);
+        initialQuestion();
+      });
+};
+
+function viewRoles() {
+    var queryString = "SELECT role.id, role.title, role.salary, deptJoin.id AS department FROM role INNER JOIN department deptJoin on deptJoin.id = role.department_id";
+
+    connection.query(queryString, function (err, res) {
+        if (err) throw err;
+        console.table(res);
+        initialQuestion();
+      });
+};
 
 function removeEmployee() {
     // Variables storing names of ALL employees and the id of which employee is selected
@@ -87,6 +109,65 @@ function removeEmployee() {
 
 }
 
+function addEmployee() {
+        inquirer
+        .prompt([
+          {
+            name: "firstName",
+            type: "input",
+            message: "What is the employee's first name?"
+          },
+          {
+            name: "lastName",
+            type: "input",
+            message: "What is the employee's last name?"
+          },
+          {
+            name: "employeeRole",
+            type: "list",
+            message: "What is the employee's role?",
+            choices: function() {}
+          }
+        ])
+    }
+
+// function addEmployee() {
+//     inquirer
+//     .prompt([
+//       {
+//         name: "firstName",
+//         type: "input",
+//         message: "What is the employee's first name?"
+//       },
+//       {
+//         name: "lastName",
+//         type: "input",
+//         message: "What is the employee's last name?"
+//       },
+//       {
+//         name: "employeeRole",
+//         type: "list",
+//         message: "What is the employee's role?",
+//         choices: function() {
+//             connection.query()
+//         }
+//       }
+//     ])
+//     let employeeRoles = []; 
+//     connection.query(
+//         "SELECT title FROM role", 
+//         function(err,res) {
+//             if (err) throw err;
+//             for (var i=0; i< res.length; i++) {
+//                 if (res[i].title !== )
+//                 employeeRoles.push(res[i].title);
+//             }
+//             console.log(employeeRoles);
+//         });
+//     // let employeeManagers = [];
+
+// };
+
   // First question asked to user
   function initialQuestion() {
     inquirer
@@ -94,15 +175,24 @@ function removeEmployee() {
             name: "initialChoice",
             type: "list",
             message: "What would you like to do?",
-            choices: ["View All Employees", "View All Employees By Department", "View All Employees By Manager", "Add Employee", "Remove Employee", "Update Employee Role", "Update Employee Manager"]
+            choices: ["View All Employees", "View All Departments", "View All Roles", "View All Employees By Department", "View All Employees By Manager", "Add Employee", "Remove Employee", "Update Employee Role", "Update Employee Manager"]
         })
         .then(function(answer) {
             switch(answer.initialChoice) {
                 case "View All Employees":
                     viewEmployees();
                     break;
+                case "View All Departments":
+                    viewDepts();
+                    break;
+                case "View All Roles":
+                    viewRoles();
+                    break;
                 case "Remove Employee":
                     removeEmployee()
+                    break;
+                case "Add Employee":
+                    addEmployee()
                     break;
                 default:
                     initialQuestion();
