@@ -66,52 +66,7 @@ function viewRoles() {
       });
 };
 
-function removeEmployee() {
-    // Variables storing names of ALL employees and the id of which employee is selected
-    let employeeNames = [];
-    let selectedEmployee = 0;
 
-    connection.query(
-        "SELECT * FROM employee", 
-        function(err, res) {
-            if (err) throw err; 
-            // Loop pushes each stored first and last name of employees to employeeNames array
-            for (var i=0; i < res.length; i++) {
-                employeeNames.push(`${res[i].first_name} ${res[i].last_name}`);
-                }
-            inquirer
-                // User selects which employee they would like to remove
-                .prompt({
-                    name: "employeeName",
-                    type: "list",
-                    message: "Which employee would you like to remove?",
-                    choices: employeeNames
-                })
-                .then(function(answer) {
-                    // Loops through first and last names in db to find all info on the employee name they selected
-                    for (var j=0; j < res.length; j++) {
-                        if (answer.employeeName === `${res[j].first_name} ${res[j].last_name}`) {
-                            // then sets variable equal to that employee's id
-                            selectedEmployee = res[j].id;
-                        }
-                    }
-                    connection.query(
-                        // Deletes the employee by id
-                        "DELETE FROM employee WHERE ?",
-                        {
-                        id: selectedEmployee
-                        },
-                        function(err, res) {
-                          if (err) throw err;
-                          console.log("Removed employee from database");
-                          initialQuestion();
-                        }
-                      );
-                })
-            }
-    )
-
-}
 
 
 function addEmployee() {
@@ -190,6 +145,56 @@ function addEmployee() {
         });
     }
 
+function addRole() {
+    departments=[];
+    connection.query("SELECT * FROM department", function(err, res) {
+        if (err) throw err;
+        for (let i=0; i<res.length; i++) {
+            departments.push(res[i].name);
+        }
+    });
+    inquirer
+    .prompt([
+      {
+        name: "title",
+        type: "input",
+        message: "What is the title of the role?"
+      },
+      {
+        name: "salary",
+        type: "input",
+        message: "What is the salary of the role?"
+      },
+      {
+        name: "deptID",
+        type: "list",
+        message: "Which department does this role work in?",
+        choices: departments
+      }
+    ]).then(function(answer) {
+        let roleTitle = answer.title;
+        let roleSalary = answer.salary;
+        let deptName = answer.deptID;
+        let deptID = 0;
+
+        connection.query("SELECT id FROM department WHERE ?", {name: deptName}, function(err, res) {
+            if (err) throw err;
+            deptID = res[0].id;
+
+            connection.query(
+                "INSERT INTO role SET ?", 
+                {title: roleTitle,
+                salary: roleSalary,
+                department_id: deptID
+                }, 
+                function(err, res) {
+                    if (err) throw err;
+                    console.log(res.affectedRows + " product inserted!\n");
+                })
+        });
+    })
+}
+
   // First question asked to user
   function initialQuestion() {
     inquirer
@@ -211,11 +216,60 @@ function addEmployee() {
                     viewRoles();
                     break;
                 case "Add Employee":
-                    // getRoles();
                     addEmployee()
+                    break;
+                case "Add Role":
+                    addRole()
                     break;
                 default:
                     initialQuestion();
               }
         })
 };
+
+// function removeEmployee() {
+    //     // Variables storing names of ALL employees and the id of which employee is selected
+    //     let employeeNames = [];
+    //     let selectedEmployee = 0;
+    
+    //     connection.query(
+    //         "SELECT * FROM employee", 
+    //         function(err, res) {
+    //             if (err) throw err; 
+    //             // Loop pushes each stored first and last name of employees to employeeNames array
+    //             for (var i=0; i < res.length; i++) {
+    //                 employeeNames.push(`${res[i].first_name} ${res[i].last_name}`);
+    //                 }
+    //             inquirer
+    //                 // User selects which employee they would like to remove
+    //                 .prompt({
+    //                     name: "employeeName",
+    //                     type: "list",
+    //                     message: "Which employee would you like to remove?",
+    //                     choices: employeeNames
+    //                 })
+    //                 .then(function(answer) {
+    //                     // Loops through first and last names in db to find all info on the employee name they selected
+    //                     for (var j=0; j < res.length; j++) {
+    //                         if (answer.employeeName === `${res[j].first_name} ${res[j].last_name}`) {
+    //                             // then sets variable equal to that employee's id
+    //                             selectedEmployee = res[j].id;
+    //                         }
+    //                     }
+    //                     connection.query(
+    //                         // Deletes the employee by id
+    //                         "DELETE FROM employee WHERE ?",
+    //                         {
+    //                         id: selectedEmployee
+    //                         },
+    //                         function(err, res) {
+    //                           if (err) throw err;
+    //                           console.log("Removed employee from database");
+    //                           initialQuestion();
+    //                         }
+    //                       );
+    //                 })
+    //             }
+    //     )
+    
+    // }
