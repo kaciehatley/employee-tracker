@@ -2,6 +2,10 @@ var mysql = require("mysql");
 var inquirer = require("inquirer");
 const cTable = require('console.table');
 
+let departments = [];
+let roles = [];
+let managers = [];
+
 // create the connection information for the sql database
 var connection = mysql.createConnection({
     host: "localhost",
@@ -109,7 +113,23 @@ function removeEmployee() {
 
 }
 
+
 function addEmployee() {
+    roles=[];
+    managers=[];
+    connection.query("SELECT * FROM role", function(err, res) {
+        if (err) throw err;
+        for (let i=0; i<res.length; i++) {
+            roles.push(res[i].title);
+        }
+    });
+    connection.query("SELECT * FROM employee", function(err, res) {
+        if (err) throw err;
+        for (let i=0; i<res.length; i++) {
+            managers.push(res[i].first_name + " " 
+            + res[i].last_name);
+        }
+    });
         inquirer
         .prompt([
           {
@@ -126,47 +146,49 @@ function addEmployee() {
             name: "employeeRole",
             type: "list",
             message: "What is the employee's role?",
-            choices: function() {}
+            choices: roles
+          },
+          {
+            name: "manager",
+            type: "list",
+            message: "Who is the employee's manager?",
+            choices: managers
           }
-        ])
+        ]).then(function(answer) {
+            console.log(answer);
+            let firstN = answer.firstName;
+            let lastN = answer.lastName;
+            let roleID = 0;
+            let manager = answer.manager.split(" ");
+            let managerID = 0;
+
+            connection.query(
+            "SELECT id FROM role where ?", 
+            {title: answer.employeeRole}, 
+            function(err, res) {
+                if (err) throw err;
+                roleID = res[0].id;
+                connection.query(
+                    "SELECT * FROM employee WHERE ? AND ?", 
+                    [{first_name: manager[0]}, {last_name: manager[1]}], 
+                    function(err, res) {
+                        if (err) throw err;
+                        managerID = res[0].id;
+                        connection.query(
+                            "INSERT INTO employee SET ?", 
+                            {first_name: firstN,
+                            last_name: lastN,
+                            role_id: roleID,
+                            manager_id: managerID
+                            }, 
+                            function(err, res) {
+                                if (err) throw err;
+                                console.log(res.affectedRows + " product inserted!\n");
+                            })
+                    })
+            })
+        });
     }
-
-// function addEmployee() {
-//     inquirer
-//     .prompt([
-//       {
-//         name: "firstName",
-//         type: "input",
-//         message: "What is the employee's first name?"
-//       },
-//       {
-//         name: "lastName",
-//         type: "input",
-//         message: "What is the employee's last name?"
-//       },
-//       {
-//         name: "employeeRole",
-//         type: "list",
-//         message: "What is the employee's role?",
-//         choices: function() {
-//             connection.query()
-//         }
-//       }
-//     ])
-//     let employeeRoles = []; 
-//     connection.query(
-//         "SELECT title FROM role", 
-//         function(err,res) {
-//             if (err) throw err;
-//             for (var i=0; i< res.length; i++) {
-//                 if (res[i].title !== )
-//                 employeeRoles.push(res[i].title);
-//             }
-//             console.log(employeeRoles);
-//         });
-//     // let employeeManagers = [];
-
-// };
 
   // First question asked to user
   function initialQuestion() {
@@ -175,7 +197,7 @@ function addEmployee() {
             name: "initialChoice",
             type: "list",
             message: "What would you like to do?",
-            choices: ["View All Employees", "View All Departments", "View All Roles", "View All Employees By Department", "View All Employees By Manager", "Add Employee", "Remove Employee", "Update Employee Role", "Update Employee Manager"]
+            choices: ["View All Employees", "View All Departments", "View All Roles", "Add Employee", "Add Role", "Add Department", "Update Employee Role"]
         })
         .then(function(answer) {
             switch(answer.initialChoice) {
@@ -188,10 +210,8 @@ function addEmployee() {
                 case "View All Roles":
                     viewRoles();
                     break;
-                case "Remove Employee":
-                    removeEmployee()
-                    break;
                 case "Add Employee":
+                    // getRoles();
                     addEmployee()
                     break;
                 default:
