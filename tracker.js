@@ -195,6 +195,25 @@ function addRole() {
     })
 }
 
+function addDept() {
+    inquirer
+    .prompt([
+      {
+        name: "name",
+        type: "input",
+        message: "What department would you like to add?"
+      }
+    ]).then(function(answer) {
+        connection.query(
+            "INSERT INTO department SET ?", 
+            {name: answer.name}, 
+            function(err, res) {
+                if (err) throw err;
+                console.log(res.affectedRows + " product inserted!\n");
+            })
+    })
+}
+
   // First question asked to user
   function initialQuestion() {
     inquirer
@@ -220,6 +239,9 @@ function addRole() {
                     break;
                 case "Add Role":
                     addRole()
+                    break;
+                case "Add Department":
+                    addDept()
                     break;
                 default:
                     initialQuestion();
