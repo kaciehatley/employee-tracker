@@ -5,6 +5,7 @@ const cTable = require('console.table');
 let departments = [];
 let roles = [];
 let managers = [];
+let employees = [];
 
 // create the connection information for the sql database
 var connection = mysql.createConnection({
@@ -139,6 +140,7 @@ function addEmployee() {
                             function(err, res) {
                                 if (err) throw err;
                                 console.log(res.affectedRows + " product inserted!\n");
+                                initialQuestion();
                             })
                     })
             })
@@ -190,6 +192,7 @@ function addRole() {
                 function(err, res) {
                     if (err) throw err;
                     console.log(res.affectedRows + " product inserted!\n");
+                    initialQuestion();
                 })
         });
     })
@@ -210,7 +213,75 @@ function addDept() {
             function(err, res) {
                 if (err) throw err;
                 console.log(res.affectedRows + " product inserted!\n");
+                initialQuestion();
             })
+    })
+}
+
+function updateEmpRole() {
+    employees=[];
+    roles=[];
+    connection.query("SELECT * FROM role", function(err, res) {
+        if (err) throw err;
+        for (let i=0; i<res.length; i++) {
+            roles.push(res[i].title);
+        }
+    });
+    connection.query("SELECT * FROM employee", function(err, res) {
+        if (err) throw err;
+        for (let i=0; i<res.length; i++) {
+            employees.push(res[i].first_name + " " 
+            + res[i].last_name);
+        }
+        console.log(employees);
+        console.log(roles);
+        inquirer
+    .prompt([
+      {
+        name: "employee",
+        type: "list",
+        message: "Which employee would you like to update?",
+        choices: employees
+      },
+      {
+        name: "role",
+        type: "list",
+        message: "What is this employee's new role?",
+        choices: roles
+      }
+    ]).then(function(answer) {
+        let selectedEmployee = answer.employee.split(" ");
+        let roleID = 0;
+
+        connection.query(
+            "SELECT id FROM role where ?", 
+            {title: answer.role}, 
+            function(err, res) {
+                if (err) throw err;
+                console.log(res);
+                roleID = res[0].id;
+                connection.query(
+                    "UPDATE employee SET ? WHERE ? AND ?",
+                    [
+                      {
+                        role_id: roleID
+                      },
+                      {
+                        first_name: selectedEmployee[0]
+                      },
+                      {
+                        last_name: selectedEmployee[1]
+                      }
+                    ],
+                    function(err, res) {
+                      if (err) throw err;
+                      console.log(res.affectedRows + " products updated!\n");
+                      // Call deleteProduct AFTER the UPDATE completes
+                      initialQuestion()
+                    })
+            }
+        )
+    });
     })
 }
 
@@ -242,6 +313,9 @@ function addDept() {
                     break;
                 case "Add Department":
                     addDept()
+                    break;
+                case "Update Employee Role":
+                    updateEmpRole()
                     break;
                 default:
                     initialQuestion();
